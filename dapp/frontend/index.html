@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turing dApp</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Projeto final · votação</p>
+          <h1>Turing <span>dApp</span></h1>
+        </div>
+        <div class="wallet">
+          <span id="connection-status">Carteira desconectada</span>
+          <button id="connect-button" class="button button-light" type="button">Conectar carteira</button>
+        </div>
+      </header>
+
+      <section class="setup card">
+        <label for="contract-address">Endereço do contrato</label>
+        <div class="inline-form">
+          <input id="contract-address" autocomplete="off" placeholder="0x...">
+          <button id="load-button" class="button button-dark" type="button">Carregar</button>
+        </div>
+        <p class="hint">Implante o contrato na rede local Hardhat e cole aqui o endereço exibido no terminal.</p>
+      </section>
+
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+      <section class="overview">
+        <article class="stat card">
+          <span class="stat-label">Votação</span>
+          <strong id="voting-status">—</strong>
+        </article>
+        <article class="stat card">
+          <span class="stat-label">Oferta total</span>
+          <strong><span id="total-supply">—</span> <small>TRN</small></strong>
+        </article>
+        <article class="stat card">
+          <span class="stat-label">Minha carteira</span>
+          <strong><span id="my-balance">—</span> <small>TRN</small></strong>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <div class="card panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Ao vivo</p>
+              <h2>Ranking</h2>
+            </div>
+            <button id="refresh-button" class="button button-light" type="button">Atualizar</button>
+          </div>
+          <ol id="ranking" class="ranking">
+            <li class="empty">Conecte-se ao contrato para carregar o ranking.</li>
+          </ol>
+        </div>
+
+        <div class="actions">
+          <form id="vote-form" class="card panel" hidden>
+            <p class="eyebrow">Participação</p>
+            <h2>Votar</h2>
+            <label for="vote-candidate">Codinome do aluno</label>
+            <select id="vote-candidate" required></select>
+            <label for="vote-amount">Turings (1 ou 2)</label>
+            <input id="vote-amount" type="number" min="1" max="2" step="1" value="1" required>
+            <button class="button button-accent" type="submit">Confirmar voto</button>
+            <p class="hint">Cada carteira pode votar uma vez em cada aluno.</p>
+          </form>
+
+          <section id="admin-panel" class="card panel admin-panel" hidden>
+            <p class="eyebrow">Superusuário</p>
+            <h2>Administração</h2>
+            <form id="issue-form">
+              <label for="issue-candidate">Emitir para</label>
+              <select id="issue-candidate" required></select>
+              <label for="issue-amount">Quantidade de TRN</label>
+              <input id="issue-amount" type="number" min="1" step="1" value="1" required>
+              <button class="button button-accent" type="submit">Emitir tokens</button>
+            </form>
+            <div class="toggle-row">
+              <span>Controle da votação</span>
+              <div class="button-row">
+                <button id="voting-on-button" class="button button-light" type="button">Abrir</button>
+                <button id="voting-off-button" class="button button-danger" type="button">Pausar</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+      <footer>Tokens sem oferta inicial · recompensa de 1 TRN a cada 10 votos</footer>
+    </main>
+  </body>
+</html>
