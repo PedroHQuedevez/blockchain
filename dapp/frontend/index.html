@@ -16,12 +16,16 @@
           <h1>Turing <span>dApp</span></h1>
         </div>
         <div class="wallet">
-          <span id="connection-status">Carteira desconectada</span>
-          <button id="connect-button" class="button button-light" type="button">Conectar carteira</button>
+          <span id="connection-status">Hardhat desconectado</span>
+          <button id="connect-button" class="button button-light" type="button">Conectar ao Hardhat</button>
         </div>
       </header>
 
       <section class="setup card">
+        <label for="account-select">Conta local Hardhat</label>
+        <select id="account-select" disabled>
+          <option value="">Conecte-se para carregar as contas</option>
+        </select>
         <label for="contract-address">Endereço do contrato</label>
         <div class="inline-form">
           <input id="contract-address" autocomplete="off" placeholder="0x...">
@@ -38,8 +42,8 @@
           <strong id="voting-status">—</strong>
         </article>
         <article class="stat card">
-          <span class="stat-label">Oferta total</span>
-          <strong><span id="total-supply">—</span> <small>TRN</small></strong>
+          <span class="stat-label">Identificação</span>
+          <strong id="account-identity">—</strong>
         </article>
         <article class="stat card">
           <span class="stat-label">Minha carteira</span>
