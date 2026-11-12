@@ -65,11 +65,11 @@ contract Turing {
         require(bytes(codename).length > 0, "Codename cannot be empty");
         require(userAddress != address(0), "Invalid user address");
 
-        address oldAddress = users[codename];
-        if (oldAddress != address(0)) delete codenameByAddress[oldAddress];
+        // address oldAddress = users[codename];
+        // if (oldAddress != address(0)) delete codenameByAddress[oldAddress];
 
-        string memory oldCodename = codenameByAddress[userAddress];
-        if (bytes(oldCodename).length > 0) delete users[oldCodename];
+        // string memory oldCodename = codenameByAddress[userAddress];
+        // if (bytes(oldCodename).length > 0) delete users[oldCodename];
 
         users[codename] = userAddress;
         codenameByAddress[userAddress] = codename;

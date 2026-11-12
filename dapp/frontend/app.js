@@ -9,6 +9,7 @@ const ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function voting() view returns (bool)",
   "function issueToken(string,uint256)",
+  "function updateUser(string,address)",
   "function votingOn()",
   "function votingOff()",
   "function vote(string,uint256)",
@@ -34,6 +35,9 @@ const elements = Object.fromEntries(
     "issue-form",
     "issue-candidate",
     "issue-amount",
+    "update-user-form",
+    "update-user-codename",
+    "update-user-address",
     "voting-on-button",
     "voting-off-button",
   ].map((id) => [id, document.getElementById(id)])
@@ -45,8 +49,14 @@ let contract;
 let account;
 let availableAccounts = [];
 let managedAccounts = [];
+let connectionMode;
+let transactionInProgress = false;
 
-for (const select of [elements["vote-candidate"], elements["issue-candidate"]]) {
+for (const select of [
+  elements["vote-candidate"],
+  elements["issue-candidate"],
+  elements["update-user-codename"],
+]) {
   for (const student of STUDENTS) {
     const option = document.createElement("option");
     option.value = student;
@@ -65,6 +75,7 @@ function showError(error) {
 }
 
 async function connectToHardhat() {
+  connectionMode = "hardhat";
   const contractAddress = contract ? await contract.getAddress() : null;
   provider = new ethers.JsonRpcProvider(HARDHAT_RPC_URL);
   availableAccounts = await provider.send("eth_accounts", []);
@@ -89,37 +100,106 @@ async function connectToHardhat() {
   }
 }
 
-/*
-Quando o MetaMask voltar a funcionar, descomente a função e o listener abaixo
-e troque connectToHardhat() por connectWallet() no fluxo de conexão.
 async function connectWallet() {
   if (!window.ethereum) {
     throw new Error("Instale ou habilite uma carteira compatível com MetaMask.");
   }
 
+  connectionMode = "metamask";
   provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = await provider.getSigner();
+  availableAccounts = await provider.send("eth_requestAccounts", []);
+  if (availableAccounts.length === 0) {
+    throw new Error("Nenhuma conta autorizada no MetaMask.");
+  }
+  const selectedAddress = availableAccounts.includes(account)
+    ? account
+    : availableAccounts[0];
+  signer = await provider.getSigner(selectedAddress);
   account = await signer.getAddress();
   elements["connection-status"].textContent = `${account.slice(0, 6)}…${account.slice(-4)}`;
-  await loadContract();
+  if (elements["contract-address"].value.trim()) {
+    await loadContract();
+  } else {
+    elements["account-select"].replaceChildren(
+      ...availableAccounts.map((address) => {
+        const option = document.createElement("option");
+        option.value = address;
+        option.textContent = `${address.slice(0, 6)}…${address.slice(-4)}`;
+        return option;
+      })
+    );
+    elements["account-select"].value = account;
+    elements["account-select"].disabled = availableAccounts.length < 2;
+  }
 }
-*/
 
 async function loadContract() {
   const address = elements["contract-address"].value.trim();
   if (!ethers.isAddress(address)) {
     throw new Error("Informe um endereço de contrato válido.");
   }
+  if (connectionMode === "metamask" && !window.ethereum) {
+    throw new Error("MetaMask não está disponível.");
+  }
   if (!provider || !signer) {
-    await connectToHardhat();
+    throw new Error("Conecte-se ao MetaMask primeiro.");
   }
   contract = new ethers.Contract(address, ABI, signer);
-  const activeAddress = await refreshAccountOptions();
-  await selectHardhatAccount(activeAddress);
+  if (connectionMode === "hardhat") {
+    const activeAddress = await refreshAccountOptions();
+    await selectHardhatAccount(activeAddress);
+  } else {
+    await refreshMetaMaskAccountOptions();
+    await updateRole();
+  }
   await refreshDashboard();
   localStorage.setItem("turing-contract-address", address);
   showNotice("Contrato conectado.");
+}
+
+async function refreshMetaMaskAccountOptions() {
+  const [owner, professor] = await Promise.all([
+    contract.owner(),
+    contract.professor(),
+  ]);
+  const addresses = [...availableAccounts];
+  for (const address of [
+    owner,
+    professor,
+    ...await Promise.all(STUDENTS.map((student) => contract.users(student))),
+  ]) {
+    if (
+      address !== ethers.ZeroAddress &&
+      !addresses.some(
+        (existing) => existing.toLowerCase() === address.toLowerCase()
+      )
+    ) {
+      addresses.push(address);
+    }
+  }
+  elements["account-select"].replaceChildren(
+    ...await Promise.all(
+      addresses.map(async (address) => {
+        const codename = await contract.codenameByAddress(address);
+        const label =
+          address.toLowerCase() === owner.toLowerCase()
+            ? "Owner"
+            : address.toLowerCase() === professor.toLowerCase()
+              ? `Professora${codename ? ` — ${codename}` : ""}`
+              : codename || "Não cadastrada";
+        const option = document.createElement("option");
+        option.value = address;
+        option.textContent = `${label} (${address.slice(0, 6)}…${address.slice(-4)})`;
+        option.disabled = !availableAccounts.some(
+          (availableAddress) =>
+            availableAddress.toLowerCase() === address.toLowerCase()
+        );
+        return option;
+      })
+    )
+  );
+  elements["account-select"].value = account;
+  elements["account-select"].disabled = availableAccounts.length < 2;
 }
 
 async function refreshAccountOptions() {
@@ -346,25 +426,53 @@ async function sendTransaction(action, successMessage) {
   if (!contract || !signer) {
     throw new Error("Conecte a carteira e carregue o contrato primeiro.");
   }
-  showNotice("Aguardando confirmação da transação…");
-  const transaction = await action();
-  await transaction.wait();
-  showNotice(successMessage);
-  await refreshDashboard();
+  if (transactionInProgress) {
+    throw new Error("Já existe uma transação aguardando confirmação.");
+  }
+  transactionInProgress = true;
+  try {
+    showNotice("Aguardando confirmação da transação…");
+    const transaction = await action();
+    await transaction.wait();
+    showNotice(successMessage);
+    await refreshDashboard();
+  } finally {
+    transactionInProgress = false;
+  }
 }
 
 elements["connect-button"].addEventListener("click", async () => {
   try {
-    await connectToHardhat();
-    showNotice("Conectado ao Hardhat local.");
+    await connectWallet();
+    showNotice("Conectado ao MetaMask.");
   } catch (error) {
     showError(error);
   }
 });
 
+// elements["connect-button"].addEventListener("click", async () => {
+//   try {
+//     await connectToHardhat();
+//     showNotice("Conectado ao Hardhat local.");
+//   } catch (error) {
+//     showError(error);
+//   }
+// });
+
 elements["account-select"].addEventListener("change", async (event) => {
   try {
-    await selectHardhatAccount(event.target.value);
+    if (connectionMode === "hardhat") {
+      await selectHardhatAccount(event.target.value);
+    } else {
+      signer = await provider.getSigner(event.target.value);
+      account = await signer.getAddress();
+      elements["connection-status"].textContent = `${account.slice(0, 6)}…${account.slice(-4)}`;
+      if (contract) {
+        contract = contract.connect(signer);
+        await updateRole();
+        await refreshDashboard();
+      }
+    }
     showNotice("Conta selecionada.");
   } catch (error) {
     elements["account-select"].value = account;
@@ -421,6 +529,31 @@ elements["issue-form"].addEventListener("submit", async (event) => {
   }
 });
 
+elements["update-user-form"].addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const userAddress = elements["update-user-address"].value.trim();
+    if (!ethers.isAddress(userAddress)) {
+      throw new Error("Informe um endereço Ethereum válido.");
+    }
+    await sendTransaction(
+      () =>
+        contract.updateUser(
+          elements["update-user-codename"].value,
+          userAddress
+        ),
+      "Usuário atualizado."
+    );
+    if (connectionMode === "hardhat") {
+      await refreshAccountOptions();
+    } else {
+      await refreshMetaMaskAccountOptions();
+    }
+  } catch (error) {
+    showError(error);
+  }
+});
+
 elements["voting-on-button"].addEventListener("click", async () => {
   try {
     await sendTransaction(() => contract.votingOn(), "Votação aberta.");
@@ -437,27 +570,39 @@ elements["voting-off-button"].addEventListener("click", async () => {
   }
 });
 
-/*
 if (window.ethereum) {
   window.ethereum.on("accountsChanged", async (accounts) => {
-    signer = null;
-    account = accounts[0] || null;
-    elements["connection-status"].textContent = account
-      ? `${account.slice(0, 6)}…${account.slice(-4)}`
-      : "Carteira desconectada";
-    if (account && contract) {
-      signer = await provider.getSigner();
-      contract = contract.connect(signer);
-      await updateRole();
-      await refreshDashboard();
-    } else {
-      elements["admin-panel"].hidden = true;
-      elements["vote-form"].hidden = true;
-      elements["my-balance"].textContent = "—";
+    try {
+      if (connectionMode !== "metamask") {
+        return;
+      }
+      availableAccounts = accounts;
+      account = accounts[0] || null;
+      elements["connection-status"].textContent = account
+        ? `${account.slice(0, 6)}…${account.slice(-4)}`
+        : "Carteira desconectada";
+      if (account) {
+        signer = await provider.getSigner(account);
+        if (contract) {
+          contract = contract.connect(signer);
+          await refreshMetaMaskAccountOptions();
+          await updateRole();
+          await refreshDashboard();
+        }
+      } else {
+        signer = null;
+        elements["account-select"].replaceChildren();
+        elements["account-select"].disabled = true;
+        elements["admin-panel"].hidden = true;
+        elements["vote-form"].hidden = true;
+        elements["my-balance"].textContent = "—";
+        elements["account-identity"].textContent = "—";
+      }
+    } catch (error) {
+      showError(error);
     }
   });
 }
-*/
 
 const savedAddress = localStorage.getItem("turing-contract-address");
 if (savedAddress) {

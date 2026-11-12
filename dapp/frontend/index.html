@@ -16,13 +16,13 @@
           <h1>Turing <span>dApp</span></h1>
         </div>
         <div class="wallet">
-          <span id="connection-status">Hardhat desconectado</span>
-          <button id="connect-button" class="button button-light" type="button">Conectar ao Hardhat</button>
+          <span id="connection-status">Carteira desconectada</span>
+          <button id="connect-button" class="button button-light" type="button">Conectar MetaMask</button>
         </div>
       </header>
 
       <section class="setup card">
-        <label for="account-select">Conta local Hardhat</label>
+        <label for="account-select">Conta ativa</label>
         <select id="account-select" disabled>
           <option value="">Conecte-se para carregar as contas</option>
         </select>
@@ -86,6 +86,14 @@
               <label for="issue-amount">Quantidade de TRN</label>
               <input id="issue-amount" type="number" min="1" step="1" value="1" required>
               <button class="button button-accent" type="submit">Emitir tokens</button>
+            </form>
+            <form id="update-user-form">
+              <label for="update-user-codename">Codinome do aluno</label>
+              <select id="update-user-codename" required></select>
+              <label for="update-user-address">Novo endereço Ethereum</label>
+              <input id="update-user-address" type="text" autocomplete="off" placeholder="0x..." required>
+              <button class="button button-accent" type="submit">Atualizar usuário</button>
+              <p class="hint">Associa o codinome selecionado a um novo endereço.</p>
             </form>
             <div class="toggle-row">
               <span>Controle da votação</span>

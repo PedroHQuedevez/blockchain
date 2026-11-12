@@ -1,0 +1,49 @@
+const [deployer] = await ethers.getSigners();
+);
+    )
+        "0x5FbDB2315678afecb367f032d93f642f64180aa3"
+    await ethers.provider.getCode(
+console.log(
+console.log(code2);
+console.log(code);
+const code2 = await ethers.provider.getCode(address2);
+const code = await ethers.provider.getCode(address2);
+const address2 = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const code = await ethers.provider.getCode(address);
+const address = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+(await ethers.provider.getNetwork()).chainId.toString()
+)clear
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    "nome1",
+)await turing.updateUser.staticCall(
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+)await turing.balanceOf(
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+await turing.codenameByAddress(
+await turing.professor()
+await turing.owner()
+);
+    deployer
+    address,
+    "Turing",
+const turing = await ethers.getContractAt(
+const [deployer] = await ethers.getSigners();
+const address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+console.log("Roberta:", await turing.codenameByAddress(await turing.professor()));
+console.log("Nome15:", await turing.users("nome15"));
+console.log("Nome1:", await turing.users("nome1"));
+console.log("Voting:", await turing.voting());
+console.log("Professor:", await turing.professor());
+console.log("Owner:", await turing.owner());
+const turing = await ethers.getContractAt("Turing", address);
+const address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+npx hardhat run scripts/deploy.js --network localhost
+npx hardhat compile --force
+console.log(await turing.voting());
+console.log(await turing.professor());
+console.log(await turing.owner());
+const turing = await ethers.getContractAt("Turing", address);
+console.log(code === "0x" ? "SEM CONTRATO" : "CONTRATO ENCONTRADO");
+const code = await ethers.provider.getCode(address);
+const address = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
